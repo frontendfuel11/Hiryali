@@ -12,14 +12,24 @@ import diseaseRoutes from './routes/disease.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
-const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  process.env.CLIENT_URL, // your deployed frontend URL later
+].filter(Boolean);
+
 
 app.disable('x-powered-by');
 app.use(helmet());
-app.use(cors({ origin(origin, callback) {
-  if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-  return callback(new Error('Origin is not allowed by CORS.'));
-}, credentials: true }));
+app.use(cors({
+  origin(origin, callback) {
+    // allow tools like curl/Postman (no Origin header) and listed origins
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error("Origin is not allowed by CORS."));
+  },
+  credentials: true, // needed because login uses cookies
+}));
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 app.use(cookieParser());
