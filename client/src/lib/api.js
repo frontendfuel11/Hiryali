@@ -70,21 +70,6 @@ export async function getMe() {
   return MOCK ? { user: mockUser } : request("/api/auth/me");
 }
 
-// Live alerts from n8n. Defaults to the local mock receiver; set
-// VITE_ALERTS_URL=http://localhost:5000/api/alerts to use the real backend.
-const ALERTS_URL =
-  import.meta.env.VITE_ALERTS_URL ||
-  (BASE ? `${BASE}/api/alerts` : "http://localhost:5057/api/alerts");
-
-export async function getAlerts() {
-  const res = await fetch(ALERTS_URL, {
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) throw new Error(`Alerts request failed (${res.status})`);
-  const data = await res.json();
-  return Array.isArray(data) ? data : [];
-}
-
 export async function getConversations() {
   if (MOCK) {
     await wait(80);
@@ -113,7 +98,7 @@ function reportFor(kind, crop) {
     conversationId: "",
     photo_ok: !unusable,
     photo_issue: unusable
-      ? "The photo is too blurry or too dark to assess reliably."
+      ? "The sample photo is too blurry or too dark to assess reliably."
       : "",
     crop: crop || "Crop not specified",
     overall: {
@@ -125,8 +110,8 @@ function reportFor(kind, crop) {
       en: unusable
         ? "This photo cannot support a reliable assessment. Take a clearer photo in daylight."
         : poor
-        ? "Assessment: visible leaf damage needs closer inspection. The photo alone cannot confirm a specific pest or disease."
-        : "Assessment: visible leaves appear mostly healthy. A single photo cannot confirm whole-field crop health.",
+        ? "Sample assessment: visible leaf damage needs closer inspection. The photo alone cannot confirm a specific pest or disease."
+        : "Sample assessment: visible leaves appear mostly healthy. A single photo cannot confirm whole-field crop health.",
       ur: unusable
         ? "اس تصویر سے قابلِ اعتماد جائزہ ممکن نہیں۔ دن کی روشنی میں واضح تصویر لیں۔"
         : poor
@@ -140,7 +125,7 @@ function reportFor(kind, crop) {
             label: "Leaf appearance",
             observation: poor
               ? "Some marks or discolouration need a closer look."
-              : "No obvious severe damage is visible in this image.",
+              : "No obvious severe damage is visible in this sample image.",
             status: poor ? "watch" : "ok",
             confidence: "medium",
           },
@@ -198,7 +183,7 @@ function reportFor(kind, crop) {
           "Ask a local agriculture officer to confirm the cause before treatment.",
         ],
     avoid: [
-      "Do not apply pesticides based only on this image.",
+      "Do not apply pesticides based only on this sample image.",
       "Do not mix chemicals without verified label guidance.",
     ],
     call_expert_if: [
