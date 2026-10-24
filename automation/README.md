@@ -1,24 +1,27 @@
 # Automated Disaster Alerts — n8n
 
-n8n polls **GDACS** (global disaster feed, no API key), keeps only **Orange/Red** alerts within **300 km of Lahore**, removes duplicates, and POSTs new alerts to the website.
+n8n polls **GDACS** (global disaster feed, no API key) and **Open-Meteo** (local weather forecast, no API key), keeps only relevant alerts, removes duplicates, and POSTs them to the website and Discord.
 
 ```
-Schedule (every 2 min) ──► GDACS RSS ──► filter 300 km + dedupe ──┬──► POST /api/alerts/ingest
-                                                                  └──► Discord webhook
-Manual "Test Alert" ─────────────────────────────────────────────┘
+Every 2 min ──► GDACS RSS ──► 300 km + Orange/Red filter ──┬──► POST /api/alerts/ingest
+           └──► Open-Meteo ──► rain/thunderstorm/wind ─────┴──► Discord webhook
+Manual "Test Alert" ────────────────────────────────────────┘
 ```
 
-Lahore: `31.5204, 74.3587`. Radius: `300 km`. Feed: `https://www.gdacs.org/xml/rss.xml`.
+Lahore: `31.5204, 74.3587`. Radius: `300 km`. Feeds: `https://www.gdacs.org/xml/rss.xml` and `https://api.open-meteo.com/v1/forecast`.
 
 The scheduled feed is real, so it may legitimately return 0 alerts near Lahore during judging. The **Test Alert (Manual)** trigger sends a fake Lahore flood through the exact same POST node — use that for the live demo.
 
 ## Real data vs test data
 
-- **Scheduled path — real.** It downloads the live GDACS feed (317 items at the time of writing) and keeps Orange/Red events inside the radius. Right now that is **0 near Lahore**, which is correct behavior, not a bug. The n8n execution view proves the feed was fetched.
-- **Test Alert — synthetic.** It creates a `TEST-...` alert with `"test": true` and sends it through the same filter/POST path. It exists so the demo always has something to show.
+- **Scheduled disaster path — real.** It downloads the live GDACS feed (317 items at the time of writing) and keeps Orange/Red events inside the radius. Right now that is **0 near Lahore**, which is correct behavior, not a bug. The n8n execution view proves the feed was fetched.
+- **Weather path — real.** It calls **Open-Meteo** (free, no API key) for Lahore's daily forecast. If rain, a thunderstorm, or high wind is forecast, it creates an alert. Today's forecast is `0.9 mm` of rain, so a real **"Rain expected near Lahore (0.9 mm)"** alert is generated. This is threshold-based forecast data, not an official government warning.
+- **Test Alert — synthetic event, real weather.** It first calls Open-Meteo for Lahore, then creates a `TEST-...` alert with `"test": true` and embeds the real temperature, rain, weather code, and wind gust in `details`. The event type is still randomly picked from flood/rain/thunderstorm/wildfire, and the title shows the real rain amount when the type is `rain`. Marked `TEST` everywhere.
 - **Mock receiver — not a data source.** It only stores and displays whatever n8n POSTs. It invents nothing.
 
-For the demo: show the **Fetch GDACS Feed** node output (hundreds of real events), then run **Test Alert (Manual)** and show the alert appear on the site. Say plainly that the live feed had no qualifying event near Lahore that minute, so the test trigger is simulating one.
+GDACS only reports major disasters — **earthquake, flood, cyclone, wildfire, drought, volcano, tsunami**. It has **no rain or thunderstorm category**; that's why the weather path uses Open-Meteo instead. Open-Meteo's WMO codes: `51–65` rain, `80–82` showers, `95–99` thunderstorm. The weather alert fires when the daily rain is **≥ 0.5 mm**, the code is **≥ 51**, or gusts are **≥ 60 km/h**.
+
+For the demo: show the **Fetch GDACS Feed** node output (hundreds of real events), then run **Test Alert (Manual)** and show the alert appear on the site. Say plainly that the live feed had no qualifying event near Lahore that minute, so the test trigger is simulating one. You can also run **Check Weather (Manual)** to show a real Open-Meteo rain alert.
 
 ## Setup (5 minutes)
 
@@ -74,9 +77,10 @@ Run these from the repository root. Expected output is noted after each step.
 3. **Terminal B** — `node automation/mock-website.mjs` → `Mock website on http://localhost:5057`.
 4. **Import** — in n8n: **Workflows → Create Workflow → ⋯ → Import from File** → `automation/disaster-alerts.n8n.json` → **Cmd/Ctrl+S**.
    CLI alternative (n8n must be stopped): `npx n8n import:workflow --input=automation/disaster-alerts.n8n.json`.
-5. **Test** — open the **Test Alert (Manual)** node → **Execute workflow**. Expect green ticks on all three nodes and HTTP `201` on **Send to Website**.
-6. **Verify** — `curl -s http://localhost:5057/api/alerts` → JSON containing `"id": "TEST-..."`. The same alert appears at <http://localhost:5057>.
-7. **Activate** — toggle **Active** (top right). The 2-minute schedule now runs.
+5. **Test** — open the **Test Alert (Manual)** node → **Execute workflow**. It fetches real Open-Meteo values, builds a labeled test alert, and expects HTTP `201` on **Send to Website**.
+6. **Real weather** — open **Check Weather (Manual)** → **Execute workflow**. Expect a real alert such as `Rain expected near Lahore (0.9 mm)` on the site and Discord.
+7. **Verify** — `curl -s http://localhost:5057/api/alerts` → JSON containing the alert IDs. The same alerts appear at <http://localhost:5057>.
+8. **Activate** — toggle **Active** (top right). The 2-minute schedule now runs both GDACS and Open-Meteo.
 
 No secrets are needed. Nothing outside this repository is modified.
 
@@ -89,6 +93,8 @@ No secrets are needed. Nothing outside this repository is modified.
 | `access to env vars denied` | Old workflow version | Re-import `automation/disaster-alerts.n8n.json` |
 | Page at 5057 is empty | Mock not running, or wrong URL in **Send to Website** | Start the mock; the node URL must end in `/api/alerts/ingest` |
 | No scheduled alerts | Feed has no Orange/Red events within 300 km (normal) | Use **Test Alert (Manual)** for the demo |
+| No weather alert | Forecast below thresholds today | Run **Check Weather (Manual)** and inspect **Build Weather Alert** output |
+| `Fetch Open-Meteo` error | Network/API unavailable | The branch continues without sending; the GDACS path still works |
 | Workflow never fires | Not activated | Toggle **Active**, or click **Execute workflow** manually |
 
 ## Files
@@ -127,7 +133,7 @@ Get a temporary URL from <https://webhook.site>, paste it into the **Send to Web
 }
 ```
 
-Test alerts also include `"test": true`.
+Test alerts also include `"test": true`. Weather alerts use `type: rain | thunderstorm | wind`, `source: "Open-Meteo"`, and a `details` object with precipitation, probability, weather code, and wind gust.
 
 The backend should store the alert and expose it to the frontend (`GET /api/alerts`, polling every ~15 s, or SSE). Duplicate protection lives in n8n, so the same GDACS event is only sent once.
 
@@ -207,4 +213,4 @@ For the local demo this is fine as-is. If you deploy it, don't expose `/api/aler
 
 ## Changing location
 
-Edit the `FARM` constant in **Filter + Dedupe (Lahore 300km)**. Both the USGS-style coordinate filter and the radius live there.
+Edit the `FARM` constant in **Filter + Dedupe (Lahore 300km)** for GDACS. For weather, update the `latitude`/`longitude` in the **Fetch Open-Meteo** URL and the coordinates in **Build Weather Alert**.
