@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { getAlerts } from "../lib/api";
-import { SAMPLE_ALERTS } from "../config";
 
-// Polls the n8n-backed alerts endpoint. Falls back to the built-in samples
-// when the endpoint is down or empty, so the page never looks broken.
+// Polls the n8n-backed alerts endpoint. An empty/unreachable endpoint shows a
+// neutral "monitoring" state rather than inventing alerts.
 export function useAlerts(pollMs = 15000) {
-  const [alerts, setAlerts] = useState(SAMPLE_ALERTS);
+  const [alerts, setAlerts] = useState([]);
   const [live, setLive] = useState(false);
   const [error, setError] = useState("");
 
@@ -16,16 +15,16 @@ export function useAlerts(pollMs = 15000) {
       try {
         const data = await getAlerts();
         if (stopped) return;
-        if (Array.isArray(data) && data.length > 0) {
-          setAlerts(data);
-          setLive(true);
-          setError("");
-        } else {
-          setAlerts(SAMPLE_ALERTS);
-          setLive(false);
-        }
+        const list = Array.isArray(data) ? data : [];
+        setAlerts(list);
+        setLive(list.length > 0);
+        setError("");
       } catch (err) {
-        if (!stopped) setError(err.message || "Alerts unavailable");
+        if (!stopped) {
+          setAlerts([]);
+          setLive(false);
+          setError(err.message || "Alerts unavailable");
+        }
       }
     };
 

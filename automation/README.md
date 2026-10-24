@@ -31,7 +31,7 @@ The scheduled feed is real, so it may legitimately return 0 alerts near Lahore d
 - **Weather path — real.** It calls **Open-Meteo** (free, no API key) for Lahore's daily forecast. If rain, a thunderstorm, or high wind is forecast, it creates an alert. Today's forecast is `0.9 mm` of rain, so a real **"Rain expected near Lahore (0.9 mm)"** alert is generated. This is threshold-based forecast data, not an official government warning.
 - **Test Alert — synthetic event, real weather.** It first calls Open-Meteo for Lahore, then creates a `TEST-...` alert with `"test": true` and embeds the real temperature, rain, weather code, and wind gust in `details`. The event type is randomly picked from flood/rain/thunderstorm/wildfire, with clean titles. The UI shows a small **Test alert** label and Discord shows a `Test alert — simulated event` footer. It is not passed off as live.
 - **Mock receiver — not a data source.** It only stores and displays whatever n8n POSTs. It invents nothing.
-- **Frontend fallback — sample.** If the alerts endpoint is empty or down, the site shows `SAMPLE_ALERTS`, labelled **Sample alert**. The page is never empty, but it never pretends those are live.
+- **Frontend empty state — no invented alerts.** If the endpoint is empty or down, the table shows “No active warnings near Lahore right now. Monitoring GDACS and Open-Meteo.” and the banner hides. It never presents fake rows as live.
 
 ## What is real vs demo
 
@@ -40,7 +40,7 @@ The scheduled feed is real, so it may legitimately return 0 alerts near Lahore d
 | GDACS disaster alerts | **Real** live feed |
 | Open-Meteo rain/thunderstorm/wind | **Real** forecast data, threshold-derived |
 | Test Alert | **Synthetic**, labelled `Test alert` / Discord footer |
-| Frontend fallback alerts | **Sample**, labelled `Sample alert` |
+| Frontend empty state | **Neutral monitoring message**, no fake rows |
 | Crop analysis and chat | **Demo/mock** (`VITE_USE_MOCK`, backend `createDemoReport`) — not a trained model |
 | Mock receiver | Stores and displays only what n8n sends |
 
@@ -167,7 +167,7 @@ It checks n8n, the mock receiver, the React site, the workflow file, the port al
 All checks passed. Ready to record.
 ```
 
-The mock receiver starts **empty**. Until n8n sends something, the frontend shows the labelled **Sample alerts**, so the page is never blank. To populate it before recording:
+The mock receiver starts **empty**. Until n8n sends something, the frontend shows a neutral “Monitoring GDACS and Open-Meteo” state, so the page is never blank and never invents alerts. To populate it before recording:
 
 1. Run **Check Weather (Manual)** → adds the real Open-Meteo alert.
 2. Run **Test Alert (Manual)** → adds a clearly labelled test alert.
@@ -273,7 +273,7 @@ Notes:
 `client/src/hooks/useAlerts.js` polls `VITE_ALERTS_URL` every 15 seconds and feeds both the top **EmergencyBar** and the **Alerts** table on the Home page.
 
 - Default URL: `http://localhost:5057/api/alerts` (the mock receiver, so the demo works today)
-- Falls back to `SAMPLE_ALERTS` if the endpoint is down or empty
+- Shows a neutral monitoring state if the endpoint is down or empty (no invented alerts)
 - Test alerts show as **Test alert**; real ones show as **Live alert**
 
 To switch to the real backend:

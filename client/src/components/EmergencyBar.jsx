@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useAlerts } from "../hooks/useAlerts";
 
 export default function EmergencyBar() {
-  const { alerts, live } = useAlerts();
+  const { alerts } = useAlerts();
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
   const reduce = useReducedMotion();
@@ -25,7 +25,7 @@ export default function EmergencyBar() {
   if (count === 0) return null;
 
   const current = alerts[index % count];
-  const label = current.test ? "Test alert" : live ? "Live alert" : "Sample alert";
+  const label = current.test ? "Test alert" : "Live alert";
   const message = current.title || current.event || "No alerts right now.";
 
   return (

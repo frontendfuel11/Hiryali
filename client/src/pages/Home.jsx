@@ -156,7 +156,7 @@ export default function Home() {
               Upload a crop photo <ArrowRight size={17} strokeWidth={1.75} />
             </Link>
             <a href="#sample-report" className="text-link">
-              See a sample report
+              See a report preview
             </a>
           </div>
           <p className="mt-5 text-sm text-[var(--gray-700)]">
@@ -174,7 +174,7 @@ export default function Home() {
           />
           <div className="hero-chat-preview">
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--gray-700)]">
-              Sample chat
+              Conversation preview
             </p>
             <div className="mt-3 flex items-start gap-3">
               <Photo
@@ -187,7 +187,7 @@ export default function Home() {
               <p className="text-sm leading-6">Can you check these leaves?</p>
             </div>
             <div className="mt-3 border-t border-[var(--gray-200)] pt-3">
-              <p className="font-semibold">Sample crop report</p>
+              <p className="font-semibold">Report preview</p>
               <p className="mt-1 text-sm leading-6 text-[var(--gray-700)]">
                 Visible leaves appear mostly healthy. A wider field photo would help
                 assess spacing and weeds.
@@ -246,13 +246,13 @@ export default function Home() {
       <section id="sample-alerts" className="site-width reveal-section section-alerts">
         <div className="section-intro">
           <p className="eyebrow">
-            <AlertTriangle size={16} strokeWidth={1.75} /> {live ? "Live alerts" : "Sample alerts"}
+            <AlertTriangle size={16} strokeWidth={1.75} /> {live ? "Live alerts" : "Alerts"}
           </p>
-          <h2>{live ? "Warnings near Lahore" : "Weather and pest warnings"}</h2>
+          <h2>Warnings near Lahore</h2>
           <p>
             {live
               ? "Fetched automatically by n8n from GDACS and Open-Meteo, filtered to Lahore. Test alerts are labelled TEST."
-              : "These examples are for interface demonstration only, not live or location-specific warnings."}
+              : "Monitoring GDACS and Open-Meteo for Lahore. New warnings appear here automatically."}
           </p>
         </div>
         <div className="table-wrap">
@@ -266,19 +266,28 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {alerts.map((alert) => (
-                <tr key={alert.id || alert.event}>
-                  <td>
-                    <span className="severity">{alert.severity}</span>
+              {alerts.length === 0 ? (
+                <tr>
+                  <td colSpan={4}>
+                    No active warnings near Lahore right now. Monitoring GDACS and
+                    Open-Meteo.
                   </td>
-                  <td>{alert.crop || alert.type || "Alert"}</td>
-                  <td>
-                    {alert.title || alert.event}
-                    {alert.test ? " (test)" : ""}
-                  </td>
-                  <td>{alert.action || (alert.source ? `Source: ${alert.source}` : "—")}</td>
                 </tr>
-              ))}
+              ) : (
+                alerts.map((alert) => (
+                  <tr key={alert.id || alert.event}>
+                    <td>
+                      <span className="severity">{alert.severity}</span>
+                    </td>
+                    <td>{alert.crop || alert.type || "Alert"}</td>
+                    <td>
+                      {alert.title || alert.event}
+                      {alert.test ? " (test)" : ""}
+                    </td>
+                    <td>{alert.action || (alert.source ? `Source: ${alert.source}` : "—")}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -331,10 +340,10 @@ export default function Home() {
 
       <section id="sample-report" className="site-width reveal-section section-sample">
         <div className="sample-copy">
-          <p className="eyebrow">Example only</p>
+          <p className="eyebrow">Report preview</p>
           <h2>A report you can read at a glance</h2>
           <p>
-            See the sort of information a crop check can organise. This example is
+            See the sort of information a crop check can organise. This preview is
             not a diagnosis.
           </p>
           <Link to="/signup" className="text-link inline-flex min-h-11 items-center gap-2">
@@ -345,16 +354,16 @@ export default function Home() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-[var(--gray-700)]">
-                Sample crop report
+                Report preview
               </p>
               <h3 className="mt-2">Wheat</h3>
             </div>
             <span className="border border-[var(--gray-300)] px-3 py-2 text-sm font-semibold">
-              Good · sample
+              Good
             </span>
           </div>
           <p className="mt-4 leading-7">
-            The visible leaves appear mostly healthy in this sample image. A wider
+            The visible leaves appear mostly healthy in this image. A wider
             field photo would help assess plant spacing and weeds.
           </p>
           <div className="mt-5 border-l-2 border-[var(--green)] pl-4">
@@ -423,7 +432,7 @@ export default function Home() {
           <Link to="/login">Log in</Link>
         </div>
         <p className="footer-note">
-          © {new Date().getFullYear()} Hariyali · Sample frontend
+          © {new Date().getFullYear()} Hariyali · Hackathon demo
         </p>
       </footer>
 
@@ -449,7 +458,7 @@ export default function Home() {
             </button>
             <h3>Call an agriculture officer</h3>
             <p className="mt-2 text-sm text-[var(--gray-700)]">
-              Replace the sample number with a verified local contact before launch.
+              Replace with a verified local contact before launch.
             </p>
             <a
               className="text-link mt-3 inline-flex min-h-11 items-center"

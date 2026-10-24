@@ -113,7 +113,7 @@ function reportFor(kind, crop) {
     conversationId: "",
     photo_ok: !unusable,
     photo_issue: unusable
-      ? "The sample photo is too blurry or too dark to assess reliably."
+      ? "The photo is too blurry or too dark to assess reliably."
       : "",
     crop: crop || "Crop not specified",
     overall: {
@@ -125,8 +125,8 @@ function reportFor(kind, crop) {
       en: unusable
         ? "This photo cannot support a reliable assessment. Take a clearer photo in daylight."
         : poor
-        ? "Sample assessment: visible leaf damage needs closer inspection. The photo alone cannot confirm a specific pest or disease."
-        : "Sample assessment: visible leaves appear mostly healthy. A single photo cannot confirm whole-field crop health.",
+        ? "Assessment: visible leaf damage needs closer inspection. The photo alone cannot confirm a specific pest or disease."
+        : "Assessment: visible leaves appear mostly healthy. A single photo cannot confirm whole-field crop health.",
       ur: unusable
         ? "اس تصویر سے قابلِ اعتماد جائزہ ممکن نہیں۔ دن کی روشنی میں واضح تصویر لیں۔"
         : poor
@@ -140,7 +140,7 @@ function reportFor(kind, crop) {
             label: "Leaf appearance",
             observation: poor
               ? "Some marks or discolouration need a closer look."
-              : "No obvious severe damage is visible in this sample image.",
+              : "No obvious severe damage is visible in this image.",
             status: poor ? "watch" : "ok",
             confidence: "medium",
           },
@@ -198,7 +198,7 @@ function reportFor(kind, crop) {
           "Ask a local agriculture officer to confirm the cause before treatment.",
         ],
     avoid: [
-      "Do not apply pesticides based only on this sample image.",
+      "Do not apply pesticides based only on this image.",
       "Do not mix chemicals without verified label guidance.",
     ],
     call_expert_if: [
