@@ -1,0 +1,1 @@
+import { Sprout } from "lucide-react"; import { Link } from "react-router-dom"; export default function Brand() { return <Link to="/" className="inline-flex min-h-11 items-center gap-2 text-[var(--green)]" aria-label="Hariyali home"><Sprout size={24} strokeWidth={1.75} /><span className="font-heading text-xl font-bold tracking-tight">Hariyali</span></Link> }

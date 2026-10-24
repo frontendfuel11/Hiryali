@@ -1,0 +1,128 @@
+const MAX = 8 * 1024 * 1024;
+const SIDE = 1600;
+const TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+const EXT = /\.(jpe?g|png|webp|heic|heif)$/i;
+
+export function validateImageFiles(list, count = 0) {
+  const accepted = [];
+  const errors = [];
+  
+  for (const f of Array.from(list || [])) {
+    if (count + accepted.length >= 4) {
+      errors.push("You can attach up to 4 photos per check.");
+      break;
+    }
+    
+    if (!(TYPES.has((f.type || "").toLowerCase()) || EXT.test(f.name))) {
+      errors.push(`${f.name}: use JPG, PNG, WebP, or HEIC.`);
+      continue;
+    }
+    
+    if (!f.size || f.size > MAX) {
+      errors.push(
+        `${f.name}: ${f.size ? "maximum size is 8 MB." : "file is empty."}`
+      );
+      continue;
+    }
+    
+    accepted.push(f);
+  }
+  
+  return { accepted, errors };
+}
+
+function load(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(
+        new Error(
+          `${file.name} could not be opened. Convert HEIC to JPG if needed.`
+        )
+      );
+    };
+    
+    img.src = url;
+  });
+}
+
+function blob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error("Could not process photo."))),
+      "image/jpeg",
+      0.82
+    );
+  });
+}
+
+export async function resizeImage(file) {
+  if (file.size > MAX) {
+    throw new Error(`${file.name}: maximum size is 8 MB.`);
+  }
+  
+  const img = await load(file);
+  const long = Math.max(img.naturalWidth, img.naturalHeight);
+  
+  if (!long) {
+    throw new Error("Invalid image dimensions.");
+  }
+  
+  const scale = Math.min(1, SIDE / long);
+  const w = Math.max(1, Math.round(img.naturalWidth * scale));
+  const h = Math.max(1, Math.round(img.naturalHeight * scale));
+  
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  
+  const ctx = c.getContext("2d");
+  if (!ctx) {
+    throw new Error("Could not prepare photo.");
+  }
+  
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  
+  const b = await blob(c);
+  
+  return new File(
+    [b],
+    `${file.name.replace(/\.[^.]+$/, "") || "crop-photo"}.jpg`,
+    { type: "image/jpeg", lastModified: Date.now() }
+  );
+}
+
+export async function prepareImages(files) {
+  if (files.length > 4) {
+    throw new Error("Choose up to 4 photos.");
+  }
+  
+  const out = [];
+  for (const f of files) {
+    out.push(await resizeImage(f));
+  }
+  
+  return out;
+}
+
+export function formatFileSize(bytes) {
+  return bytes < 1048576
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / 1048576).toFixed(1)} MB`;
+}
