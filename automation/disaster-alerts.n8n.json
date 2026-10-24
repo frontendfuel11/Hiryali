@@ -1,11 +1,11 @@
 {
-  "name": "Hiryali \u2014 Automated Disaster Alerts (Lahore)",
+  "name": "Hiryali — Automated Disaster Alerts (Lahore)",
   "nodes": [
     {
       "parameters": {
-        "content": "## Automated Disaster Alerts (Lahore)\n\n**Flow:** Schedule (2 min) -> GDACS RSS -> filter 300 km + Orange/Red -> dedupe -> POST to website.\n**No API key needed.**\n\n**Website URL:** open the *Send to Website* node and replace the URL when the real backend is ready.\n\n**Demo:** click \"Execute workflow\" on *Test Alert (Manual)*. It sends a fake Lahore flood through the same POST node.\nReal feed may show 0 alerts near Lahore \u2014 that is normal; the test trigger is for the live demo.\n\n**Payload sent to the website:** id, type, title, severity, country, lat, lng, distanceKm, source, url, detectedAt.",
-        "height": 260,
-        "width": 460,
+        "content": "## Automated Disaster Alerts (Lahore)\n\n**Flow:** Schedule (2 min) -> GDACS RSS -> filter 300 km + Orange/Red -> dedupe -> POST to website + Discord.\n**No API key needed.**\n\n**Website URL:** open *Send to Website* and replace the URL when the real backend is ready.\n\n**Discord:** create a channel webhook (Edit Channel -> Integrations -> Webhooks), then paste it into *Notify Discord*.\n\n**Demo:** click *Execute workflow* on **Test Alert (Manual)**. It sends a fake Lahore flood to both outputs.\nReal feed may show 0 alerts near Lahore — that is normal; the test trigger is for the live demo.",
+        "height": 320,
+        "width": 480,
         "color": 4
       },
       "id": "note-1",
@@ -86,7 +86,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "return [{\n  json: {\n    id: 'TEST-' + Date.now().toString(36).toUpperCase(),\n    type: 'flood',\n    title: 'TEST ALERT \u2014 Flood warning near Lahore',\n    severity: 'red',\n    country: 'Pakistan',\n    lat: 31.5204,\n    lng: 74.3587,\n    distanceKm: 0,\n    source: 'Hackathon test trigger',\n    url: 'https://www.gdacs.org',\n    detectedAt: new Date().toISOString(),\n    test: true,\n  },\n}];"
+        "jsCode": "return [{\n  json: {\n    id: 'TEST-' + Date.now().toString(36).toUpperCase(),\n    type: 'flood',\n    title: 'TEST ALERT — Flood warning near Lahore',\n    severity: 'red',\n    country: 'Pakistan',\n    lat: 31.5204,\n    lng: 74.3587,\n    distanceKm: 0,\n    source: 'Hackathon test trigger',\n    url: 'https://www.gdacs.org',\n    detectedAt: new Date().toISOString(),\n    test: true,\n  },\n}];"
       },
       "id": "code-test",
       "name": "Build Test Alert",
@@ -115,6 +115,27 @@
       "position": [
         280,
         200
+      ],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1563494463798771862/UR01tkdTxd4rjj1vSjMlKQD6-LD2NtwZNhv3TYpBKs9SOGg5eKj-QpjhnmgtRhY5FGUN",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ username: 'Hiryali Alerts', embeds: [{ title: '🚨 ' + $json.title, description: $json.type + ' · ' + $json.country + ' · ' + $json.distanceKm + ' km from Lahore', color: $json.severity === 'red' ? 15158332 : 15105570, fields: [{ name: 'Severity', value: $json.severity, inline: true }, { name: 'Source', value: $json.source, inline: true }], url: $json.url, timestamp: $json.detectedAt }] }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-discord",
+      "name": "Notify Discord",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        520,
+        340
       ],
       "onError": "continueRegularOutput"
     }
@@ -149,6 +170,11 @@
             "node": "Send to Website",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Notify Discord",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -169,6 +195,11 @@
         [
           {
             "node": "Send to Website",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify Discord",
             "type": "main",
             "index": 0
           }
