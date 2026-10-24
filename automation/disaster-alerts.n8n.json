@@ -1,0 +1,188 @@
+{
+  "name": "Hiryali \u2014 Automated Disaster Alerts (Lahore)",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Automated Disaster Alerts (Lahore)\n\n**Flow:** Schedule (2 min) -> GDACS RSS -> filter 300 km + Orange/Red -> dedupe -> POST to website.\n**No API key needed.**\n\n**Website URL:** open the *Send to Website* node and replace the URL when the real backend is ready.\n\n**Demo:** click \"Execute workflow\" on *Test Alert (Manual)*. It sends a fake Lahore flood through the same POST node.\nReal feed may show 0 alerts near Lahore \u2014 that is normal; the test trigger is for the live demo.\n\n**Payload sent to the website:** id, type, title, severity, country, lat, lng, distanceKm, source, url, detectedAt.",
+        "height": 260,
+        "width": 460,
+        "color": 4
+      },
+      "id": "note-1",
+      "name": "Setup Notes",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        -260
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "trigger-schedule",
+      "name": "Every 2 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -420,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://www.gdacs.org/xml/rss.xml",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "http-gdacs",
+      "name": "Fetch GDACS Feed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -200,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Parse GDACS RSS and keep only Orange/Red alerts within 300 km of Lahore.\nconst input = $input.first().json;\nconst raw = typeof input.data === 'string' ? input.data : JSON.stringify(input);\n\nconst FARM = { lat: 31.5204, lng: 74.3587, radiusKm: 300 };\nconst TYPE_LABEL = { EQ: 'earthquake', FL: 'flood', TC: 'cyclone', WF: 'wildfire', VO: 'volcano', DR: 'drought', TS: 'tsunami' };\n\nconst getTag = (block, name) => {\n  const re = new RegExp(`<${name}(?:\\\\s[^>]*)?>([\\\\s\\\\S]*?)<\\\\/${name}>`, 'i');\n  const m = block.match(re);\n  return m ? m[1].replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g, '$1').trim() : '';\n};\n\nconst toRad = (d) => (d * Math.PI) / 180;\nconst distanceKm = (lat1, lng1, lat2, lng2) => {\n  const R = 6371;\n  const dLat = toRad(lat2 - lat1);\n  const dLng = toRad(lng2 - lng1);\n  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;\n  return 2 * R * Math.asin(Math.sqrt(a));\n};\n\nconst items = [...raw.matchAll(/<item>([\\s\\S]*?)<\\/item>/gi)].map((m) => m[1]);\nconst staticData = $getWorkflowStaticData('global');\nconst seen = new Set(staticData.seenAlertIds || []);\nconst alerts = [];\n\nfor (const item of items) {\n  const level = getTag(item, 'gdacs:alertlevel');\n  if (!/orange|red/i.test(level)) continue;\n\n  let lat = Number(getTag(item, 'geo:lat'));\n  let lng = Number(getTag(item, 'geo:long'));\n  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {\n    const point = getTag(item, 'georss:point').split(/\\s+/).map(Number);\n    [lat, lng] = point;\n  }\n  if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;\n\n  const dist = distanceKm(FARM.lat, FARM.lng, lat, lng);\n  if (dist > FARM.radiusKm) continue;\n\n  const id = `${getTag(item, 'gdacs:eventid')}-${getTag(item, 'gdacs:episodeid')}`;\n  if (!id || id === '-' || seen.has(id)) continue;\n  seen.add(id);\n\n  alerts.push({\n    json: {\n      id,\n      type: TYPE_LABEL[getTag(item, 'gdacs:eventtype')] || 'disaster',\n      title: getTag(item, 'title') || 'Disaster alert',\n      severity: level.toLowerCase(),\n      country: getTag(item, 'gdacs:country'),\n      lat, lng,\n      distanceKm: Math.round(dist),\n      source: 'GDACS',\n      url: getTag(item, 'link') || 'https://www.gdacs.org',\n      detectedAt: new Date().toISOString(),\n    },\n  });\n}\n\nstaticData.seenAlertIds = [...seen].slice(-500);\nreturn alerts;"
+      },
+      "id": "code-filter",
+      "name": "Filter + Dedupe (Lahore 300km)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        20,
+        60
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "trigger-manual",
+      "name": "Test Alert (Manual)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "return [{\n  json: {\n    id: 'TEST-' + Date.now().toString(36).toUpperCase(),\n    type: 'flood',\n    title: 'TEST ALERT \u2014 Flood warning near Lahore',\n    severity: 'red',\n    country: 'Pakistan',\n    lat: 31.5204,\n    lng: 74.3587,\n    distanceKm: 0,\n    source: 'Hackathon test trigger',\n    url: 'https://www.gdacs.org',\n    detectedAt: new Date().toISOString(),\n    test: true,\n  },\n}];"
+      },
+      "id": "code-test",
+      "name": "Build Test Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5057/api/alerts/ingest",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "http-post",
+      "name": "Send to Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        280,
+        200
+      ],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Every 2 Minutes": {
+      "main": [
+        [
+          {
+            "node": "Fetch GDACS Feed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch GDACS Feed": {
+      "main": [
+        [
+          {
+            "node": "Filter + Dedupe (Lahore 300km)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter + Dedupe (Lahore 300km)": {
+      "main": [
+        [
+          {
+            "node": "Send to Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Alert (Manual)": {
+      "main": [
+        [
+          {
+            "node": "Build Test Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Test Alert": {
+      "main": [
+        [
+          {
+            "node": "Send to Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
