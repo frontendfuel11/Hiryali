@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-export default function Chat() {
+export default function Chat({ compact = false }) {
   const [messages, setMessages] = useState([
     {
       role: 'bot',
@@ -56,13 +58,13 @@ export default function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[500px] w-full max-w-md mx-auto border border-gray-200 rounded-xl shadow-lg bg-white overflow-hidden">
+    <div className={`flex flex-col w-full bg-white overflow-hidden ${compact ? "h-[430px]" : "h-[500px] max-w-md mx-auto border border-gray-200 rounded-xl shadow-lg"}`}>
       {/* Header */}
       <div className="bg-green-600 p-4 text-white flex items-center gap-3">
         <Bot size={24} />
         <div>
           <h2 className="font-bold text-lg leading-tight">AgriGuard Bot</h2>
-          <p className="text-xs text-green-100">Powered by Llama 3.1 8B (Open Source)</p>
+          <p className="text-xs text-green-100">Powered by open-weight AI</p>
         </div>
       </div>
 
@@ -83,7 +85,15 @@ export default function Chat() {
                   : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
               }`}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <div className="chat-md">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           </div>
         ))}

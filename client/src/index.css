@@ -94,8 +94,20 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .footer-note { grid-column: 1 / -1; padding-top: 16px; border-top: 1px solid var(--gray-200); font-size: .875rem; color: var(--gray-700); }
 .urgent-help { position: fixed; z-index: 30; right: 20px; bottom: 20px; }
 .urgent-trigger { display: inline-flex; min-height: 48px; align-items: center; gap: 9px; padding: 10px 15px; border: 1px solid var(--green); background: var(--white); color: var(--green); font-size: .95rem; font-weight: 600; box-shadow: 0 4px 16px rgb(26 26 24 / 8%); }
-.urgent-panel { position: absolute; right: 0; bottom: 60px; width: min(320px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--gray-300); background: var(--white); box-shadow: 0 8px 24px rgb(26 26 24 / 10%); }
+.urgent-panel { position: absolute; right: 0; bottom: 60px; width: min(400px, calc(100vw - 24px)); max-height: calc(100vh - 100px); overflow-y: auto; padding: 14px; border: 1px solid var(--gray-300); background: var(--white); box-shadow: 0 8px 24px rgb(26 26 24 / 10%); }
 .urgent-close { position: absolute; top: 6px; right: 6px; min-height: 44px; min-width: 44px; display: grid; place-items: center; }
+.urgent-close-inline { min-height: 44px; min-width: 44px; display: grid; place-items: center; }
+.chat-md p { margin: 0 0 .5rem; }
+.chat-md p:last-child { margin-bottom: 0; }
+.chat-md ul, .chat-md ol { margin: .35rem 0 .5rem 1.1rem; }
+.chat-md li { margin: .15rem 0; }
+.chat-md strong { font-weight: 700; }
+.chat-md a { text-decoration: underline; }
+.chat-md h1, .chat-md h2, .chat-md h3 { margin: .5rem 0 .25rem; font-size: 1rem; font-weight: 700; }
+.chat-md table { width: 100%; border-collapse: collapse; margin: .5rem 0; font-size: .85em; }
+.chat-md th, .chat-md td { border: 1px solid var(--gray-200); padding: .35rem .5rem; text-align: left; }
+.chat-md code { background: #f4f4f2; padding: .1rem .25rem; }
+.chat-md pre { overflow-x: auto; background: #f4f4f2; padding: .5rem; margin: .5rem 0; }
 .auth-layout { display: grid; grid-template-columns: 1fr .8fr; gap: clamp(48px, 9vw, 120px); padding-top: 64px; padding-bottom: 80px; }
 .auth-form-wrap { max-width: 520px; padding-top: 35px; }
 .auth-photo-wrap { position: relative; min-height: 540px; border: 1px solid var(--gray-300); }

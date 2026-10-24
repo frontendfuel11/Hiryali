@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import EmergencyBar from "../components/EmergencyBar";
+import Chat from "./Chat";
 import { CONFIG } from "../config";
 import { useAlerts } from "../hooks/useAlerts";
 
@@ -447,25 +448,29 @@ export default function Home() {
           Need urgent help?
         </button>
         {helpOpen && (
-          <div className="urgent-panel" role="dialog" aria-label="Urgent help options">
-            <button
-              type="button"
-              className="urgent-close"
-              onClick={() => setHelpOpen(false)}
-              aria-label="Close urgent help"
-            >
-              <X size={17} />
-            </button>
-            <h3>Call an agriculture officer</h3>
-            <p className="mt-2 text-sm text-[var(--gray-700)]">
-              Replace with a verified local contact before launch.
+          <div className="urgent-panel" role="dialog" aria-label="Ask AgriGuard">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <h3>Ask AgriGuard</h3>
+              <button
+                type="button"
+                className="urgent-close-inline"
+                onClick={() => setHelpOpen(false)}
+                aria-label="Close urgent help"
+              >
+                <X size={17} />
+              </button>
+            </div>
+            <Chat compact />
+            <p className="mt-2 text-xs text-[var(--gray-700)]">
+              For an emergency, call{" "}
+              <a
+                className="underline"
+                href={`tel:${CONFIG.agricultureOfficerPhone}`}
+              >
+                {CONFIG.agricultureOfficerPhone}
+              </a>
+              .
             </p>
-            <a
-              className="text-link mt-3 inline-flex min-h-11 items-center"
-              href={`tel:${CONFIG.agricultureOfficerPhone}`}
-            >
-              {CONFIG.agricultureOfficerPhone}
-            </a>
           </div>
         )}
       </div>
