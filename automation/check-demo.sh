@@ -20,7 +20,7 @@ body=$(curl -s --max-time 5 http://localhost:5057/api/alerts 2>/dev/null || true
 if printf '%s' "$body" | python3 -c 'import json,sys; assert isinstance(json.load(sys.stdin), list)' 2>/dev/null; then
   n=$(printf '%s' "$body" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))')
   if [ "$n" -eq 0 ]; then
-    printf "  ⚠️  mock receiver is up but empty. Frontend shows sample alerts; run Check Weather / Test Alert before recording.\n"
+    printf "  ⚠️  mock receiver is up but empty. Frontend shows the monitoring state; run Check Weather / Test Alert before recording.\n"
   else
     pass "mock receiver is up at http://localhost:5057 ($n alerts)"
   fi
@@ -29,8 +29,8 @@ else
 fi
 
 echo "3) React site"
-c=$(code http://localhost:5173/)
-[ "$c" = "200" ] && pass "frontend is up at http://localhost:5173" || bad "frontend not reachable (got $c). Run: cd client && npm run dev"
+c=$(code http://localhost:3000/)
+[ "$c" = "200" ] && pass "frontend is up at http://localhost:3000" || bad "frontend not reachable (got $c). Run: cd client && npm run dev"
 
 echo "4) Workflow file"
 if python3 -m json.tool automation/disaster-alerts.n8n.json >/dev/null 2>&1; then
