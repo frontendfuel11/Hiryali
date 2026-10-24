@@ -4,7 +4,7 @@ import Conversation from '../models/Conversation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { imageUpload } from '../middleware/upload.js';
 import { createDemoReport } from '../services/analyzer.js';
-import { analyzeCropImage } from '../services/vision.js';
+import { analyzeByCrop } from '../services/cropAnalysis.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/httpError.js';
 
@@ -14,6 +14,9 @@ router.post('/', requireAuth, (req, res, next) => imageUpload(req, res, (err) =>
   const crop = String(req.body.crop || 'Other').trim().slice(0, 50) || 'Other';
   const lang = req.body.lang === 'ur' ? 'ur' : 'en';
   const files = [...(req.files?.images || []), ...(req.files?.['images[]'] || [])];
+  if (files.length && !String(req.body.crop || '').trim()) {
+    throw new HttpError(400, 'Select a crop before sending a photo.');
+  }
   let conversation;
 
   if (req.body.conversationId) {
@@ -34,7 +37,7 @@ router.post('/', requireAuth, (req, res, next) => imageUpload(req, res, (err) =>
   // report until a text model is wired into this DB-backed route.
   const reports = [];
   for (const file of files.slice(0, 4)) {
-    reports.push(await analyzeCropImage(file.buffer, { crop, lang, message }));
+    reports.push(await analyzeByCrop(file.buffer, { crop, lang, message }));
   }
   reports.sort((a, b) => (b.topScore || 0) - (a.topScore || 0));
   const report = files.length

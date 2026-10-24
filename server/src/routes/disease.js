@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { imageUpload } from '../middleware/upload.js';
-import { analyzeCropImage } from '../services/vision.js';
+import { analyzeByCrop } from '../services/cropAnalysis.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/httpError.js';
 
@@ -18,10 +18,13 @@ router.post(['/detect-disease', '/detect'], (req, res, next) => {
   if (!files.length) throw new HttpError(400, 'No image provided. Attach a crop photo.');
   if (files.length > 4) throw new HttpError(400, 'Attach no more than 4 images at a time.');
 
+  const crop = String(req.body?.crop || '').trim().slice(0, 50);
+  if (!crop) throw new HttpError(400, 'Select a crop before sending a photo.');
+
   const reports = [];
   for (const file of files.slice(0, 4)) {
-    reports.push(await analyzeCropImage(file.buffer, {
-      crop: String(req.body?.crop || '').trim().slice(0, 50),
+    reports.push(await analyzeByCrop(file.buffer, {
+      crop,
       lang: req.body?.lang === 'ur' ? 'ur' : 'en',
       message: String(req.body?.message || '').slice(0, 2000),
     }));

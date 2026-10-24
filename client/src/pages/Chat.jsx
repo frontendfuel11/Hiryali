@@ -56,6 +56,28 @@ export default function Chat() {
     try { const result = await getConversations(); setConversations(Array.isArray(result) ? result : result?.conversations || []); } catch { /* Chat remains usable when history is unavailable. */ }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const onDragOver = (e) => {
+      if (Array.from(e.dataTransfer?.types || []).includes("Files")) e.preventDefault();
+    };
+    const onDrop = (e) => {
+      if (!Array.from(e.dataTransfer?.types || []).includes("Files")) return;
+      e.preventDefault();
+      if (e.target.closest?.(".composer")) return; // composer handles its own drop
+      const input = document.querySelector('input[aria-label="Choose crop photos"]');
+      if (!input || typeof DataTransfer === "undefined") return;
+      const dt = new DataTransfer();
+      Array.from(e.dataTransfer.files || []).forEach((file) => dt.items.add(file));
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, []);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "end" }); }, [messages, reduce]);
 
   useEffect(() => {
