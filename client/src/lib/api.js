@@ -209,6 +209,41 @@ function reportFor(kind, crop) {
   };
 }
 
+async function visionRequest(formData) {
+  const res = await fetch(`${BASE}/api/disease/detect`, {
+    method: "POST",
+    body: formData,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(body.message || body.error || `Disease request failed (${res.status})`);
+  }
+  return body;
+}
+
+function rememberLocalReport(report, { message = "", crop = "" } = {}) {
+  const id = report.conversationId || `vision-${Date.now()}`;
+  report.conversationId = id;
+  const now = new Date().toISOString();
+  let c = conversations.find((x) => x.id === id);
+  if (!c) {
+    c = {
+      id,
+      title: crop || report.crop || "Crop check",
+      crop: crop || report.crop || "Crop check",
+      createdAt: now,
+      updatedAt: now,
+      messages: [],
+    };
+    conversations.unshift(c);
+  }
+  c.updatedAt = now;
+  c.messages.push(
+    { id: `u-${Date.now()}`, role: "user", text: message, crop, images: [], createdAt: now },
+    { id: `a-${Date.now()}`, role: "assistant", report, createdAt: now }
+  );
+}
+
 export async function analyzeCrop({
   images = [],
   message = "",
@@ -216,6 +251,18 @@ export async function analyzeCrop({
   language = "en",
   conversationId = "",
 }) {
+  // Real local vision model first (public endpoint, no DB required).
+  if (images.length > 0 && import.meta.env.VITE_USE_VISION !== "false") {
+    const fd = new FormData();
+    images.forEach((file) => fd.append("images", file));
+    fd.append("crop", crop || "");
+    fd.append("lang", language);
+    fd.append("message", message || "");
+    const report = await visionRequest(fd);
+    if (MOCK) rememberLocalReport(report, { message, crop });
+    return report;
+  }
+
   if (MOCK) {
     await wait(550);
     const kind = ["good", "poor", "unusable"][variant++ % 3];

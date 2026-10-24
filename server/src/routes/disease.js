@@ -1,49 +1,49 @@
-const express = require('express');
-const multer = require('multer');
-const router = express.Router();
+import { Router } from 'express';
+import { imageUpload } from '../middleware/upload.js';
+import { analyzeCropImage } from '../services/vision.js';
+import { asyncHandler } from '../utils/asyncHandler.js';
+import { HttpError } from '../utils/httpError.js';
 
-// Keep the image in memory (RAM) instead of saving to disk for speed
-const upload = multer({ storage: multer.memoryStorage() });
+const router = Router();
 
-// Ensure this matches the '/api/detect-disease' URL from your React frontend
-router.post('/detect-disease', upload.single('cropImage'), async (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: 'No image provided' });
+// /api/detect-disease (original path) and /api/disease/detect (new path)
+router.post(['/detect-disease', '/detect'], (req, res, next) => {
+  imageUpload(req, res, (err) => (err ? next(err) : next()));
+}, asyncHandler(async (req, res) => {
+  const files = [
+    ...(req.files?.cropImage || []),
+    ...(req.files?.images || []),
+    ...(req.files?.['images[]'] || []),
+  ];
+  if (!files.length) throw new HttpError(400, 'No image provided. Attach a crop photo.');
+  if (files.length > 4) throw new HttpError(400, 'Attach no more than 4 images at a time.');
+
+  const reports = [];
+  for (const file of files.slice(0, 4)) {
+    reports.push(await analyzeCropImage(file.buffer, {
+      crop: String(req.body?.crop || '').trim().slice(0, 50),
+      lang: req.body?.lang === 'ur' ? 'ur' : 'en',
+      message: String(req.body?.message || '').slice(0, 2000),
+    }));
   }
 
-  try {
-    // Send the raw image buffer to the Hugging Face Inference API
-    const response = await fetch(
-      'https://api-inference.huggingface.co/models/VisionaryQuant/5_Crop_Disease_Detection',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
-          'Content-Type': req.file.mimetype,
-        },
-        body: req.file.buffer, 
-      }
-    );
+  // Use the most confident photo when several are attached.
+  reports.sort((a, b) => (b.topScore || 0) - (a.topScore || 0));
+  const report = reports[0];
 
-    const result = await response.json();
+  res.json({
+    success: true,
+    conversationId: `disease-${Date.now()}`,
+    disease: report.crop_findings?.[0]?.label || report.crop,
+    confidence: report.overall?.confidence,
+    imagesAnalyzed: reports.length,
+    predictions: reports.map((r) => ({
+      crop: r.crop,
+      label: r.crop_findings?.[0]?.label || '',
+      score: r.topScore || 0,
+    })),
+    ...report,
+  });
+}));
 
-    // The Hugging Face API returns an array of predictions sorted by confidence score
-    if (result && result.length > 0) {
-      const highestPrediction = result[0];
-      
-      res.json({
-        success: true,
-        disease: highestPrediction.label,
-        confidence: highestPrediction.score
-      });
-    } else {
-      res.status(500).json({ success: false, error: 'AI model returned empty result' });
-    }
-
-  } catch (error) {
-    console.error('Hugging Face API Error:', error);
-    res.status(500).json({ success: false, error: 'Failed to process image' });
-  }
-});
-
-module.exports = router;
+export default router;

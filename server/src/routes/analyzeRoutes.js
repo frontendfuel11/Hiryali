@@ -4,6 +4,7 @@ import Conversation from '../models/Conversation.js';
 import { requireAuth } from '../middleware/auth.js';
 import { imageUpload } from '../middleware/upload.js';
 import { createDemoReport } from '../services/analyzer.js';
+import { analyzeCropImage } from '../services/vision.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { HttpError } from '../utils/httpError.js';
 
@@ -29,9 +30,15 @@ router.post('/', requireAuth, (req, res, next) => imageUpload(req, res, (err) =>
   conversation.lastActivityAt = new Date();
   conversation.messages.push({ role: 'user', text: message, crop, lang, imageCount: files.length });
 
-  // Demo mode intentionally does not claim to analyse image pixels.
-  const report = process.env.ANALYSIS_MODE === 'demo'
-    ? createDemoReport({ crop, lang, message, imageCount: files.length })
+  // Real vision when photos are attached; text-only follow-ups use the demo
+  // report until a text model is wired into this DB-backed route.
+  const reports = [];
+  for (const file of files.slice(0, 4)) {
+    reports.push(await analyzeCropImage(file.buffer, { crop, lang, message }));
+  }
+  reports.sort((a, b) => (b.topScore || 0) - (a.topScore || 0));
+  const report = files.length
+    ? reports[0]
     : createDemoReport({ crop, lang, message, imageCount: files.length });
   conversation.lastReport = report;
   conversation.messages.push({ role: 'assistant', text: report.summary[lang] || report.summary.en, crop, lang, report });
