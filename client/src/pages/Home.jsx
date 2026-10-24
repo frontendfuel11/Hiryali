@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import EmergencyBar from "../components/EmergencyBar";
-import { CONFIG, SAMPLE_ALERTS } from "../config";
+import { CONFIG } from "../config";
+import { useAlerts } from "../hooks/useAlerts";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
 
@@ -45,7 +46,7 @@ const faqs = [
   ],
   [
     "How do alerts work?",
-    "The alerts on this page are clearly marked samples. A production alert service would need a trusted local source and location-specific information.",
+    "Live alerts are fetched by n8n from GDACS (earthquakes, floods, cyclones, wildfires) within 300 km of Lahore and from Open-Meteo (rain, thunderstorm, wind). Test alerts are clearly labelled TEST.",
   ],
 ];
 
@@ -82,6 +83,7 @@ export default function Home() {
   const mainRef = useRef(null);
   const [faqOpen, setFaqOpen] = useState(-1);
   const [helpOpen, setHelpOpen] = useState(false);
+  const { alerts, live } = useAlerts();
 
   useGSAP(
     () => {
@@ -120,7 +122,7 @@ export default function Home() {
             How it works
           </a>
           <a href="#sample-alerts" className="nav-link">
-            Sample alerts
+            Alerts
           </a>
           <a href="#questions" className="nav-link">
             Questions
@@ -244,12 +246,13 @@ export default function Home() {
       <section id="sample-alerts" className="site-width reveal-section section-alerts">
         <div className="section-intro">
           <p className="eyebrow">
-            <AlertTriangle size={16} strokeWidth={1.75} /> Sample alerts
+            <AlertTriangle size={16} strokeWidth={1.75} /> {live ? "Live alerts" : "Sample alerts"}
           </p>
-          <h2>Weather and pest warnings</h2>
+          <h2>{live ? "Warnings near Lahore" : "Weather and pest warnings"}</h2>
           <p>
-            These examples are for interface demonstration only, not live or
-            location-specific warnings.
+            {live
+              ? "Fetched automatically by n8n from GDACS and Open-Meteo, filtered to Lahore. Test alerts are labelled TEST."
+              : "These examples are for interface demonstration only, not live or location-specific warnings."}
           </p>
         </div>
         <div className="table-wrap">
@@ -257,20 +260,23 @@ export default function Home() {
             <thead>
               <tr>
                 <th>Severity</th>
-                <th>Crop</th>
+                <th>Type</th>
                 <th>What is happening</th>
-                <th>What to do</th>
+                <th>Source / action</th>
               </tr>
             </thead>
             <tbody>
-              {SAMPLE_ALERTS.map((alert) => (
-                <tr key={alert.event}>
+              {alerts.map((alert) => (
+                <tr key={alert.id || alert.event}>
                   <td>
                     <span className="severity">{alert.severity}</span>
                   </td>
-                  <td>{alert.crop}</td>
-                  <td>{alert.event}</td>
-                  <td>{alert.action}</td>
+                  <td>{alert.crop || alert.type || "Alert"}</td>
+                  <td>
+                    {alert.title || alert.event}
+                    {alert.test ? " (test)" : ""}
+                  </td>
+                  <td>{alert.action || (alert.source ? `Source: ${alert.source}` : "—")}</td>
                 </tr>
               ))}
             </tbody>
@@ -412,7 +418,7 @@ export default function Home() {
         </div>
         <div className="footer-links">
           <a href="#how-it-works">How it works</a>
-          <a href="#sample-alerts">Sample alerts</a>
+          <a href="#sample-alerts">Alerts</a>
           <a href="#questions">Questions</a>
           <Link to="/login">Log in</Link>
         </div>

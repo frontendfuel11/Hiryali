@@ -70,6 +70,21 @@ export async function getMe() {
   return MOCK ? { user: mockUser } : request("/api/auth/me");
 }
 
+// Live alerts from n8n. Defaults to the local mock receiver; set
+// VITE_ALERTS_URL=http://localhost:5000/api/alerts to use the real backend.
+const ALERTS_URL =
+  import.meta.env.VITE_ALERTS_URL ||
+  (BASE ? `${BASE}/api/alerts` : "http://localhost:5057/api/alerts");
+
+export async function getAlerts() {
+  const res = await fetch(ALERTS_URL, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) throw new Error(`Alerts request failed (${res.status})`);
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getConversations() {
   if (MOCK) {
     await wait(80);
