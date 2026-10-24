@@ -29,8 +29,8 @@ else
 fi
 
 echo "3) React site"
-c=$(code http://localhost:3000/)
-[ "$c" = "200" ] && pass "frontend is up at http://localhost:3000" || bad "frontend not reachable (got $c). Run: cd client && npm run dev"
+c=$(code http://localhost:5173/)
+[ "$c" = "200" ] && pass "frontend is up at http://localhost:5173" || bad "frontend not reachable (got $c). Run: cd client && npm run dev"
 
 echo "4) Workflow file"
 if python3 -m json.tool automation/disaster-alerts.n8n.json >/dev/null 2>&1; then

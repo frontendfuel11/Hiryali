@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import Brand from "../components/Brand";
 import EmergencyBar from "../components/EmergencyBar";
-import Chat from "./Chat";
+import Chat from "../components/HaryaliChat";
 import { CONFIG } from "../config";
 import { useAlerts } from "../hooks/useAlerts";
 
@@ -448,9 +448,9 @@ export default function Home() {
           Need urgent help?
         </button>
         {helpOpen && (
-          <div className="urgent-panel" role="dialog" aria-label="Ask AgriGuard">
+          <div className="urgent-panel" role="dialog" aria-label="Ask Haryali">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <h3>Ask AgriGuard</h3>
+              <h3>Ask Haryali</h3>
               <button
                 type="button"
                 className="urgent-close-inline"

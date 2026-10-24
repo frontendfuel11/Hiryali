@@ -11,7 +11,7 @@ import chatRoutes from './routes/chat.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
-const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:3000').split(',').map(s => s.trim()).filter(Boolean);
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173,http://localhost:3000').split(',').map(s => s.trim()).filter(Boolean);
 
 app.disable('x-powered-by');
 app.use(helmet());

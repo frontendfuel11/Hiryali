@@ -16,10 +16,10 @@ Lahore: `31.5204, 74.3587`. Radius: `300 km`. Feeds: `https://www.gdacs.org/xml/
 |---|---|---|
 | n8n | <http://localhost:5678> | `npx n8n` |
 | Mock receiver | <http://localhost:5057> | `node automation/mock-website.mjs` |
-| React site | <http://localhost:3000> | `cd client && npm run dev` |
+| React site | <http://localhost:5173> | `cd client && npm run dev` |
 | Real backend (not used today) | <http://localhost:5000> | needs MongoDB + alert routes |
 
-Today's demo path: **n8n :5678 → mock receiver :5057 → React site :3000**. Everything else is future work.
+Today's demo path: **n8n :5678 → mock receiver :5057 → React site :5173**. Everything else is future work.
 
 > On this Mac, port 5000 is occupied by AirPlay (ControlCenter). The mock uses 5057 to avoid it.
 
@@ -141,7 +141,7 @@ No secrets are needed. Nothing outside this repository is modified.
 Today's demo is complete **without** the backend:
 
 ```
-n8n :5678  →  mock receiver :5057  →  React site :3000
+n8n :5678  →  mock receiver :5057  →  React site :5173
 ```
 
 The API in `server/src` is done for auth/analyze/conversations, but it has **no `/api/alerts` routes**, requires MongoDB, and port 5000 is occupied by AirPlay on this Mac. Do not switch to it before judging.
@@ -171,7 +171,7 @@ The mock receiver starts **empty**. Until n8n sends something, the frontend show
 
 1. Run **Check Weather (Manual)** → adds the real Open-Meteo alert.
 2. Run **Test Alert (Manual)** → adds a clearly labelled test alert.
-3. Refresh <http://localhost:3000>.
+3. Refresh <http://localhost:5173>.
 
 Restarting `mock-website.mjs` clears its in-memory alerts; do that if you want a clean slate before the final run.
 
@@ -186,7 +186,7 @@ Manual end-to-end check:
 
    The newest item has an `id` starting with `TEST-`, `"test": true`, and real weather in `details`.
 
-3. Open <http://localhost:3000> — the banner/table updates within 15 seconds.
+3. Open <http://localhost:5173> — the banner/table updates within 15 seconds.
 4. Check Discord — the embed footer says `Test alert — simulated event`.
 5. Run **Check Weather (Manual)** — today it produces a real `Rain expected near Lahore (0.9 mm)` alert.
 6. Confirm the real GDACS path still fetches:
