@@ -9,6 +9,7 @@ import conversationRoutes from './routes/conversationRoutes.js';
 import analyzeRoutes from './routes/analyzeRoutes.js';
 import chatRoutes from './routes/chat.js';
 import diseaseRoutes from './routes/disease.js';
+import alertsRoutes from './routes/alerts.js';
 import { notFound, errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/conversations', conversationRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/disease', diseaseRoutes);
+app.use('/api/alerts', alertsRoutes);
 app.use('/api', diseaseRoutes);
 app.use(notFound);
 app.use(errorHandler);
